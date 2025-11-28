@@ -1,0 +1,110 @@
+// import express from "express";
+// import dotenv from "dotenv";
+// import connectDB from "./config/db.js"; // Don't forget the .js extension if using ES Modules
+// import userRouter from "./routes/user_auth.js";
+// import adminRouter from "./routes/admin_auth.js";
+// import cookieParser from "cookie-parser";
+// import scheduleRouter from "./routes/schedule.js";
+// import dashboardRouter from "./routes/dashboard.js";
+
+// dotenv.config();
+
+// const app = express();
+// app.use(express.json());
+// app.use(cookieParser());
+
+
+// const PORT = process.env.PORT || 5000;
+
+// // Connect to MongoDB first, then start the server
+
+
+// app.use("/user",userRouter);
+// app.use("/admin",adminRouter);
+// app.use("/admin/schedule",  scheduleRouter);
+// app.use("/user/schedule",scheduleRouter);
+// app.use("/admin/dashboard",dashboardRouter);
+
+
+
+// connectDB()
+//   .then(() => {
+//     app.listen(PORT, () => {
+//       console.log(`✅ Server running on port ${PORT}`);
+//     });
+//   })
+//   .catch((error) => {
+//     console.error("❌ Failed to connect to MongoDB:", error.message);
+//     process.exit(1);
+//   });
+
+
+
+
+// server/index.js (your existing file, updated)
+import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import userRouter from "./routes/user_auth.js";
+import adminRouter from "./routes/admin_auth.js";
+import cookieParser from "cookie-parser";
+import scheduleRouter from "./routes/schedule.js";
+import dashboardRouter from "./routes/dashboard.js";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+const app = express();
+app.use(express.json());
+app.use(cookieParser());
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true); 
+    } else {
+      callback(new Error("CORS blocked: Not allowed by server"));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+
+// ===== API routes =====
+app.use("/user", userRouter);
+app.use("/admin", adminRouter);
+app.use("/admin/schedule", scheduleRouter);
+app.use("/user/schedule", scheduleRouter);
+app.use("/admin/dashboard", dashboardRouter);
+
+// ===== Serve react build in production =====
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if (process.env.NODE_ENV === "production") {
+  const buildPath = path.join(__dirname, "../client/build"); // adjust if structure differs
+  app.use(express.static(buildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+}
+
+const PORT = process.env.PORT || 5000;
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("❌ Failed to connect to MongoDB:", error.message);
+    process.exit(1);
+  });
