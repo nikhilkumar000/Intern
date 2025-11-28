@@ -1,72 +1,73 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
 
-const adminSchema = new mongoose.Schema(
+const AdminSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: [true, "Name is required"],
       trim: true,
+      minlength: [3, "Name must be at least 3 characters"],
+      maxlength: [50, "Name cannot exceed 50 characters"],
     },
 
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
-      match: [/.+@.+\..+/, "Invalid email address"],
+      trim: true,
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        "Please enter a valid email",
+      ],
     },
 
     password: {
       type: String,
-      required: true,
-      minlength: 6,
-      maxlength: 20
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters"],
+      select: false, 
     },
 
-    coordinatorOf: {
+    phoneNo: {
       type: String,
-      enum: [
-        "cricket",
-        "football",
-        "basketball",
-        "volleyball",
-        "badminton",
-        "table tennis",
-        "hockey",
-        "athletics",
-        "kabaddi",
-        "chess",
-        "others",
+      trim: true,
+      match: [
+        /^[0-9]{10}$/,
+        "Phone number must be exactly 10 digits",
       ],
-      required: true,
-      unique : true
+    },
+
+    twoFactorAuthentication: {
+      enabled: { type: Boolean, default: false },
+      secret: { type: String },
+    },
+
+    // PASSWORD RESET
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
+
+    razorpayId: {
+      type: String,
+      trim: true,
+    },
+
+    passwordLastChanged: { type: Date },
+    passwordLastLogin: { type: Date },
+
+    // For admin who manages tarot readers
+    howManyExpertInYou: {
+      type: String,
+      trim: true,
+    },
+
+    role: {
+      type: String,
+      enum: ["admin", "superadmin"],
+      default: "admin",
     },
   },
   { timestamps: true }
 );
 
-//
-// 🔐 Hash password before saving
-// //
-adminSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// //
-// // 🔑 Method to compare passwords during login
-// //
-adminSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-const Admin = mongoose.model("Admin", adminSchema);
-
-export default Admin;
+export default mongoose.model("Admin", AdminSchema);

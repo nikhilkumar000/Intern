@@ -1,128 +1,382 @@
 import User from "../models/user.js";
-import { streamUpload } from "../config/cloudinary.js";
+import bcrypt from "bcrypt";
+import generateToken from "../utils/generateToken.js";
 
-export const registerUser = async (req, res) => {
+
+
+const sendTokenCookie = (res, user) => {
+  const token = generateToken({ id: user._id });
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    maxAge: 1000 * 60 * 60 * 24 * (process.env.JWT_EXPIRES_DAYS ? Number(process.env.JWT_EXPIRES_DAYS) : 7),
+  };
+  res.cookie("token", token, cookieOptions);
+};
+
+
+ export const registerUser = async (req, res) => {
   try {
-    // text fields (from multipart/form-data)
+ 
     const {
       firstName,
       lastName,
       email,
-      year,
-      branch,
-      rollNumber,
-      whatsappNumber,
-      contactNumber,
+      password,
+      phoneNo,
       gender,
-      url // optional external URL
+      dob,
+      birthTime,
+      birthPlace,
     } = req.body;
 
-    // parse/normalize sports (works for sports[], JSON string, CSV, single)
-    let { sports } = req.body;
-    if (sports === undefined) {
-      sports = null;
-    } else if (typeof sports === "string") {
-      try {
-        const parsed = JSON.parse(sports);
-        sports = Array.isArray(parsed) ? parsed : [parsed];
-      } catch {
-        sports = sports.includes(",") ? sports.split(",").map(s => s.trim()).filter(Boolean) : [sports.trim()];
-      }
-    } else if (!Array.isArray(sports)) {
-      sports = [String(sports)];
-    }
-    sports = sports.map(s => s.toLowerCase());
-
-    // basic validations (same as before)
-    if (!firstName || !lastName || !email || !year || !branch || !rollNumber || !whatsappNumber || !contactNumber || !gender || !sports) {
+    if (!firstName || !lastName || !email || !password || !phoneNo || !gender || !dob || !birthPlace || birthTime) {
       return res.status(400).json({ message: "All required fields must be provided." });
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ message: "Invalid email format." });
 
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(whatsappNumber)) return res.status(400).json({ message: "Invalid WhatsApp number (must be 10 digits)." });
-    if (!phoneRegex.test(contactNumber)) return res.status(400).json({ message: "Invalid contact number (must be 10 digits)." });
+    if (!phoneRegex.test(phoneNo)) return res.status(400).json({ message: "Invalid contact number (must be 10 digits)." });
 
-    const validYears = ["first","second","third","fourth"];
-    if (!validYears.includes(year.toLowerCase())) return res.status(400).json({ message: "Year must be one of: first, second, third, fourth." });
 
     const validGenders = ["male","female","other"];
     if (!validGenders.includes(gender.toLowerCase())) return res.status(400).json({ message: "Gender must be one of: male, female, other." });
 
-    // sports validation
-    const allowedSports = ["cricket","football","basketball","volleyball","badminton","table tennis","hockey","athletics","kabaddi","chess","others"];
-    const invalidSports = sports.filter(s => !allowedSports.includes(s.toLowerCase()));
-    if (invalidSports.length > 0) return res.status(400).json({ message: `Invalid sports selected: ${invalidSports.join(", ")}` });
-
-    // external URL validation if provided
-    if (url) {
-      const urlRegex = /^(https?:\/\/)?([\w\-])+\.{1}[a-zA-Z]{2,63}([\/\w\-.]*)*\/?$/;
-      if (!urlRegex.test(url)) return res.status(400).json({ message: "Invalid URL format." });
-    }
 
     // check duplicates
     const userExists = await User.findOne({ $or: [{ email }, { rollNumber }] });
-    if (userExists) return res.status(400).json({ message: "User with this email or roll number already exists." });
+    if (userExists) return res.status(400).json({ message: "User with this email already exists." });
 
-    // handle optional image upload -> upload to Cloudinary and wait for result
-    let imageUrl = null;
-    let imagePublicId = null;
 
-    if (req.file && req.file.buffer) {
-      if (!req.file.mimetype.startsWith("image/")) return res.status(400).json({ message: "Uploaded file is not an image." });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-      try {
-        const result = await streamUpload(req.file.buffer, { folder: "users/images", resource_type: "image" });
-        imageUrl = result.secure_url || result.url;
-        imagePublicId = result.public_id;
-      } catch (uploadErr) {
-        console.error("Cloudinary upload failed:", uploadErr);
-        return res.status(500).json({ message: "Image upload failed. Try again." });
-      }
-    }
 
-    // if user is not admin and no image provided and you require an ID -> enforce
-    if (!req.admin && !url && !imageUrl) {
-      return res.status(400).json({ message: "Please upload ID ." });
-    }
-
-    // prepare user data and create user (create BEFORE sending response)
     const userData = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim().toLowerCase(),
-      year: year.toLowerCase(),
-      branch: "CSE",
-      rollNumber: rollNumber.trim().toUpperCase(),
-      whatsappNumber,
-      contactNumber,
-      sports,
+      password:hashedPassword,
+      dob,
+      birthTime,
+      birthPlace,
+      phoneNo,
       gender: gender.toLowerCase(),
     };
 
-    if (url) userData.url = url;
-    else if (imageUrl) userData.url = imageUrl;
+      const user = await User.create(userData);
 
-    if (imagePublicId) userData.imagePublicId = imagePublicId;
-
-    const user = await User.create(userData); // <-- awaited
-
-    // respond with created user including the Cloudinary URL (if any)
-    return res.status(201).json({
+    
+      return res.status(201).json({
       _id: user._id,
       name: `${user.firstName} ${user.lastName}`,
-      rollNumber: user.rollNumber,
-      url: user.url || null,
-      imagePublicId: user.imagePublicId || null,
-      message: "Submission successful. Admin will approve later on.",
+      email: user.email,
+      message: "Registration Successful",
     });
 
   } catch (error) {
     console.error("Error registering user:", error);
-    if (error && error.code === "LIMIT_FILE_SIZE") return res.status(400).json({ message: "File is too large. Max 2MB." });
-    return res.status(500).json({ message: "Server error, please try again later." });
+    return res.status(500).json({ message: error.message || "Server error, please try again later." });
   }
 };
 
-export default registerUser;
+export const loginUser = async (req,res) => {
+  try {
+    //loginProvider is optionl , it can we used when we login with mobile number or login with google
+    const { email, password, loginProvider = "email" } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password are required" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        res.status(401).json( {message: "User not exist with this email"});
+   
+      }
+    
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        res.status(401).json({message:"Invalid email or password"});
+      }
+  
+    if (user.isBlocked) {
+      return res
+        .status(403)
+        .json({ message: "Your account is blocked" });
+    }
+
+    sendTokenCookie(res, user);
+
+     res.json({
+       _id: user._id,
+       name: user.firstName,
+       email: user.email,
+     });
+    
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
+export const logoutUser = async (req, res) => {
+  try {
+    res.clearCookie("token");
+    return res.status(200).json({
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+   
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user id" });
+    }
+
+    const user = await User.findById(id).select("-password");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      user,
+    });
+
+  } catch (error) {
+      return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// Body: any updatable fields (name, phoneNo, gender, dob, birthTime, birthPlace, etc.)
+export const userProfileUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user id" });
+    }
+
+    const allowedFields = [
+      "firstName",
+      "lastName",
+      "phoneNo",
+      "email",
+      "gender",
+      "dob",
+      "birthTime",
+      "birthPlace",
+    ];
+
+
+    const updates = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+
+  } catch (error) {
+     return res.status(500).json({
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+export const userProfileDelete = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user id" });
+    }
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Optionally also clear auth cookie if user is deleting own account
+    res.clearCookie("token");
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+
+    if (!userId || !oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "userId, oldPassword and newPassword are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "New password must be at least 6 characters",
+      });
+    }
+
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Old password is incorrect" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password updated successfully",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+
+export const requestPasswordReset = async (req, res, next) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User doesn't exist" });
+
+    const secret = process.env.JWT + user.password;
+    const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
+
+     const resetURL = `https://your-backend-url/resetpassword?id=${user._id}&token=${token}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 't1129172@gmail.com',
+        pass: 'password',
+      },
+    });
+
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL,
+      subject: 'Password Reset Request',
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+      Please click on the following link, or paste this into your browser to complete the process:\n\n
+      ${resetURL}\n\n
+      If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: 'Password reset link sent' });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+}; 
+
+
+export const resetPassword = async (req, res, next) => {
+  const { id, token } = req.query;
+  const { password } = req.body;
+
+  try {
+    const user = await User.findOne({ _id: id });
+    if (!user) {
+      return res.status(400).json({ message: "User not exists!" });
+    }
+
+    const secret = process.env.JWT + user.password;
+
+
+
+    const verify = jwt.verify(token, secret);
+    const encryptedPassword = await bcrypt.hash(password, 10);
+    await User.updateOne(
+      {
+        _id: id,
+      },
+      {
+        $set: {
+          password: encryptedPassword,
+        },
+      }
+    );
+
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been reset' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+};
+
+
+
+
+

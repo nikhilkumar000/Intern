@@ -1,29 +1,35 @@
-// middleware/adminAuth.js
 import jwt from "jsonwebtoken";
-import asyncHandler from "express-async-handler";
 import Admin from "../models/admin.js";
 
-export const protectAdmin = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.token || null;
+export const protectAdmin = async (req, res, next) => {
+  try {
+    const token = req.cookies?.token;
 
-  if (!token) {
+    if (!token) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const admin = await Admin.findById(decoded.id).select("-password");
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    req.admin = admin; 
+
+    next();
+
+  } catch (error) {
     return res.status(401).json({
-      success: false,
-      message: "Not authorized, you are not admin"
+      message: "Unauthorized access",
+      error: error.message,
     });
   }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin = await Admin.findById(decoded.id).select("-password");
-    if (!admin) {
-      res.status(401);
-      throw new Error("Not authorized - admin not found");
-    }
-    req.admin = admin; // attach admin to request
-    next();
-  } catch (err) {
-    res.status(401);
-    throw new Error("Not authorized - token invalid/expired");
-  }
-});
+};
