@@ -1,7 +1,7 @@
 // middleware/adminAuth.js
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
-import User from "../models/admin.js";
+import User from "../models/user.js";
 
 export const protectUser = asyncHandler(async (req, res, next) => {
   const token = req.cookies?.token || null;

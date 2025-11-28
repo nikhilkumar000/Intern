@@ -1,7 +1,7 @@
 
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
-import TarotReader from "../models/expert";
+import TarotReader from "../models/expert.js";
 
 export const protectExpert = asyncHandler(async (req, res, next) => {
   const token = req.cookies?.token || null;

@@ -7,7 +7,7 @@ import {
   updateVisibility,
 } from "../controllers/expert_controller.js";
 import { upload } from "../middlewares/upload.js";
-import { protectExpert } from "../middlewares/tarotReaderauth.js";
+import { protectExpert } from "../middlewares/tarotReaderAuth.js";
 
 const ExpertRouter = express.Router();
 
@@ -18,7 +18,6 @@ ExpertRouter.post("/login", loginTarotReader);
 // UPLOAD DOCUMENTS
 ExpertRouter.post(
   "/verification/documents",
-  isTarotReader,
   upload.fields([{ name: "certificate", maxCount: 1 }]),
   uploadTarotReaderDocuments
 );
