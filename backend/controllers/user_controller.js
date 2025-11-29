@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import generateToken from "../utils/generateToken.js";
+import mongoose from "mongoose";
 
 
 
@@ -31,7 +32,7 @@ const sendTokenCookie = (res, user) => {
       birthPlace,
     } = req.body;
 
-    if (!firstName || !lastName || !email || !password || !phoneNo || !gender || !dob || !birthPlace || birthTime) {
+    if (!firstName || !lastName || !email || !password || !phoneNo || !gender || !dob || !birthPlace || !birthTime) {
       return res.status(400).json({ message: "All required fields must be provided." });
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,7 +47,7 @@ const sendTokenCookie = (res, user) => {
 
 
     // check duplicates
-    const userExists = await User.findOne({ $or: [{ email }, { rollNumber }] });
+    const userExists = await User.findOne({ email});
     if (userExists) return res.status(400).json({ message: "User with this email already exists." });
 
 
@@ -92,7 +93,7 @@ export const loginUser = async (req,res) => {
         .status(400)
         .json({ success: false, message: "Email and password are required" });
     }
-
+    
     const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) {
         res.status(401).json( {message: "User not exist with this email"});
@@ -103,13 +104,12 @@ export const loginUser = async (req,res) => {
       if (!isMatch) {
         res.status(401).json({message:"Invalid email or password"});
       }
-  
+     
     if (user.isBlocked) {
       return res
         .status(403)
         .json({ message: "Your account is blocked" });
     }
-
     sendTokenCookie(res, user);
 
      res.json({
@@ -130,6 +130,8 @@ export const logoutUser = async (req, res) => {
     res.clearCookie("token");
     return res.status(200).json({
       message: "Logged out successfully",
+      name:req.user.firstName,
+      email:req.user.email
     });
   } catch (error) {
    
@@ -142,21 +144,23 @@ export const logoutUser = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(id)
 
     if (!mongoose.isValidObjectId(id)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid user id" });
     }
+    console.log("id pass")
 
     const user = await User.findById(id).select("-password");
-
+    console.log(user)
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-
+    console.log(user)
     return res.status(200).json({
       user,
     });
@@ -235,14 +239,16 @@ export const userProfileDelete = async (req, res) => {
     if (!deletedUser) {
       return res
         .status(404)
-        .json({ success: false, message: "User not found" });
+        .json({
+           message: "User not found" });
     }
 
     // Optionally also clear auth cookie if user is deleting own account
     res.clearCookie("token");
 
     return res.status(200).json({
-      success: true,
+      name:deletedUser.firstName,
+      email:deletedUser.email,
       message: "User deleted successfully",
     });
   } catch (error) {
@@ -310,7 +316,8 @@ export const requestPasswordReset = async (req, res, next) => {
     const secret = process.env.JWT + user.password;
     const token = jwt.sign({ id: user._id, email: user.email }, secret, { expiresIn: '1h' });
 
-     const resetURL = `https://your-backend-url/resetpassword?id=${user._id}&token=${token}`;
+     const resetURL = `https://localhost:3000/user/auth/resetpassword?id=${user._id}&token=${token}`;
+   
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',

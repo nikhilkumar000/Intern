@@ -1,31 +1,37 @@
 import express from "express";
 import {
-  registerTarotReader,
-  loginTarotReader,
-  uploadTarotReaderDocuments,
-  updateAvailability,
+  registerExpert,
+  loginExpert,
   updateVisibility,
+  logoutExpert,
+  expertProfileDelete,
+  expertProfileUpdate,
+  changePassword
 } from "../controllers/expert_controller.js";
-import { upload } from "../middlewares/upload.js";
-import { protectExpert } from "../middlewares/tarotReaderAuth.js";
+import multer from "multer";
+import { protectExpert } from "../middlewares/ExpertAuth.js";
 
 const ExpertRouter = express.Router();
+const upload = multer({ dest: "uploads/" });
 
 // AUTH
-ExpertRouter.post("/register", registerTarotReader);
-ExpertRouter.post("/login", loginTarotReader);
+ExpertRouter.post("/register", registerExpert);
+ExpertRouter.post("/login", loginExpert);
+ExpertRouter.post("/logout",protectExpert, logoutExpert);
+ExpertRouter.delete("/profile/delete", protectExpert, expertProfileDelete);
 
-// UPLOAD DOCUMENTS
-ExpertRouter.post(
-  "/verification/documents",
-  upload.fields([{ name: "certificate", maxCount: 1 }]),
-  uploadTarotReaderDocuments
+ExpertRouter.patch(
+  "/profile/update",
+  protectExpert,
+  upload.fields([
+    { name: "profilePic", maxCount: 1 },   // single profile picture
+    { name: "certificates", maxCount: 5} // one or multiple certificate files
+  ]),
+  expertProfileUpdate
 );
-
-// UPDATE AVAILABILITY
-ExpertRouter.patch("/settings/availability", protectExpert, updateAvailability);
-
-// UPDATE VISIBILITY
 ExpertRouter.patch("/settings/visibility", protectExpert, updateVisibility);
+ExpertRouter.patch("/profile/password/change", protectExpert, changePassword);
+// ExpertRouter.get("/profile",protectExpert,getExpertProfile);
+//Password Forgot
 
 export default ExpertRouter;

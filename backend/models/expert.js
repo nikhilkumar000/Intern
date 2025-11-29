@@ -11,8 +11,9 @@ const TarotReaderSchema = new mongoose.Schema(
       type: String,
     },
 
-    certificate: {
-      type: String, // File URL or certificate number
+    certificates: {
+      type: [String], // Array of file URLs or certificate numbers
+      default: []
     },
 
     email: {
@@ -58,12 +59,10 @@ const TarotReaderSchema = new mongoose.Schema(
 
     ratePerMinuteChat: {
       type: Number,
-      required: true,
     },
 
     ratePerMinuteVideo: {
       type: Number,
-      required: true,
     },
 
     availableSlots: [
@@ -111,9 +110,9 @@ const TarotReaderSchema = new mongoose.Schema(
     },
 
     expertise: {
-      type: String,
+      type: [String],
       enum: ["love", "career", "life", "finance", "general", "all"],
-      default: "general",
+      default: ["general"],
     },
 
     preferredReadingTime: {
@@ -192,4 +191,4 @@ const TarotReaderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("TarotReader", TarotReaderSchema); 
+export default mongoose.model("Expert", TarotReaderSchema); 

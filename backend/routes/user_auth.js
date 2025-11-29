@@ -11,7 +11,9 @@ userRouter.post("/register", registerUser);
 userRouter.post("/login",  loginUser);
 userRouter.post("/logout",protectUser, logoutUser);
 // userRouter.post("/password/forgot", forgotPassword);
-userRouter.post("/password/change", protectUser, changePassword);     // when user knows password
+
+//After login
+userRouter.put("/password/change", protectUser, changePassword);     // when user knows password
 userRouter.get("/profile/:id",protectUser, getUserProfile);
 userRouter.put("/profile/update/:id", protectUser, userProfileUpdate);
 userRouter.delete("/profile/delete/:id", protectUser, userProfileDelete);

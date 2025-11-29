@@ -1,7 +1,7 @@
 
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
-import TarotReader from "../models/expert.js";
+import Expert from "../models/expert.js";
 
 export const protectExpert = asyncHandler(async (req, res, next) => {
   const token = req.cookies?.token || null;
@@ -14,12 +14,12 @@ export const protectExpert = asyncHandler(async (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await TarotReader.findById(decoded.id).select("-password");
-    if (!user) {
+    const expert = await Expert.findById(decoded.id).select("-password");
+    if (!expert) {
       res.status(401);
       throw new Error("Not authorized - Expert not found");
     }
-    req.user = user; // attach user to request
+    req.expert = expert; // attach user to request
     next();
   } catch (err) {
     res.status(401);
