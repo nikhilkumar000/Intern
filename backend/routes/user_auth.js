@@ -16,10 +16,10 @@ userRouter.get("/profile/:id",protectUser, getUserProfile);
 userRouter.put("/profile/update/:id", protectUser, userProfileUpdate);
 userRouter.delete("/profile/delete/:id", protectUser, userProfileDelete);
 // Route to request password reset
-router.post('/password/forgot', requestPasswordReset);
+userRouter.post('/password/forgot', requestPasswordReset);
 
 // Route to reset password
-router.post('/resetpassword/:id/:token',resetPassword );
+userRouter.post('/resetpassword/:id/:token',resetPassword );
 
 
 

@@ -1,13 +1,10 @@
-// tarot_reader_controller.js👇👇👇👇👇👇👇
 
-import TarotReader from "../models/TarotReader.js";
+import TarotReader from "../models/expert.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
 
 // ---------------------- REGISTER ----------------------
 export const registerTarotReader = async (req, res) => {
-  //address country state
-  //name   phone No   email password bio skills profilepic experience preffered_card_type  card_count language
   try {
     const { name, email, password, phoneNo, language, gender } = req.body;
 

@@ -12,54 +12,39 @@ const AdminSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        "Please enter a valid email",
-      ],
+      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
 
     password: {
       type: String,
-      required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
-      select: false, 
+      required: true,
+      minlength: 6,
     },
 
     phoneNo: {
       type: String,
       trim: true,
-      match: [
-        /^[0-9]{10}$/,
-        "Phone number must be exactly 10 digits",
-      ],
+      match: [/^[0-9]{10}$/, "Phone number must be exactly 10 digits"],
     },
 
-    twoFactorAuthentication: {
-      enabled: { type: Boolean, default: false },
-      secret: { type: String },
-    },
+    /** OTP LOGIN FIELDS */
+    otpCode: { type: String },
+    otpExpire: { type: Date },
 
-    // PASSWORD RESET
+    /** RESET PASSWORD */
     resetPasswordToken: { type: String },
     resetPasswordExpire: { type: Date },
 
-    razorpayId: {
-      type: String,
-      trim: true,
-    },
+    razorpayId: { type: String, trim: true },
 
     passwordLastChanged: { type: Date },
     passwordLastLogin: { type: Date },
 
-    // For admin who manages tarot readers
-    howManyExpertInYou: {
-      type: String,
-      trim: true,
-    },
+    howManyExpertInYou: { type: String, trim: true },
 
     role: {
       type: String,

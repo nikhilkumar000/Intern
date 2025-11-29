@@ -1,9 +1,11 @@
-import speakeasy from "speakeasy";
+
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import Admin from "../models/admin.js";
 import generateToken from "../utils/generateToken.js";
+import sendEmailOtp from "../utils/sendOtp.js";
+import { generateSecureOtp } from "../utils/generateOtp.js";
 
 
 const sendTokenCookie = (res, admin) => {
@@ -20,46 +22,110 @@ const sendTokenCookie = (res, admin) => {
 
 export const loginAdmin = async (req, res) => {
   try {
-    const { email, password, otp } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password)
-      return res.status(400).json({ message: "Email & Password required" });
+      return res.status(400).json({ message: "Email & password are required" });
 
-    const admin = await Admin.findOne({ email })
-      .select("+password +twoFactorAuthentication.secret");
+    const admin = await Admin.findOne({ email });
 
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    if (!admin)
+      return res.status(404).json({ message: "Admin does not exist" });
 
     const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid email or password" });
 
-    if (admin.twoFactorAuthentication.enabled) {
-      if (!otp) return res.status(401).json({ message: "OTP required" });
+    // GENERATE OTP 
+    const otp = generateSecureOtp();
 
-      const verified = speakeasy.totp.verify({
-        secret: admin.twoFactorAuthentication.secret,
-        encoding: "base32",
-        token: otp,
-        window: 1,
-      });
 
-      if (!verified) return res.status(401).json({ message: "Invalid OTP" });
-    }
+    admin.otpCode = otp;
+    admin.otpExpire = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await admin.save();
 
+    //SEND OTP TO EMAIL 
+    await sendEmailOtp(admin.email, otp);
+
+    return res.status(200).json({
+      message: "OTP sent to your email. Please verify OTP.",
+      step: "verify-otp",
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Login failed", error: error.message });
+  }
+};
+
+
+
+export const verifyAdminOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp)
+      return res.status(400).json({ message: "Email & OTP are required" });
+
+    const admin = await Admin.findOne({ email })
+
+    if (!admin)
+      return res.status(404).json({ message: "Admin not found" });
+
+    if (!admin.otpCode)
+      return res.status(400).json({ message: "OTP not generated" });
+
+    if (admin.otpCode !== otp)
+      return res.status(401).json({ message: "Invalid OTP" });
+
+    if (admin.otpExpire < Date.now())
+      return res.status(401).json({ message: "OTP expired" });
+
+    // CLEAR OTP 
+    admin.otpCode = null;
+    admin.otpExpire = null;
+    await admin.save();
+
+    // SEND TOKEN 
     sendTokenCookie(res, admin);
 
-    res.status(200).json({
-      message: "Login successful",
+    return res.status(200).json({
+      message: "OTP Verified. Login Successful.",
       admin: {
         id: admin._id,
+        name: admin.name,
         email: admin.email,
         role: admin.role,
-        name: admin.name,
       },
     });
 
   } catch (error) {
-    res.status(500).json({ message: "Login failed", error: error.message });
+    return res.status(500).json({ message: "OTP verification failed", error: error.message });
+  }
+};
+
+export const resendAdminOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const admin = await Admin.findOne({ email });
+
+    if (!admin)
+      return res.status(404).json({ message: "Admin not found" });
+
+    const otp = generateSecureOtp()
+
+    admin.otpCode = otp;
+    admin.otpExpire = Date.now() + 5 * 60 * 1000;
+    await admin.save();
+
+    await sendEmailOtp(email, otp);
+
+    return res.status(200).json({
+      message: "OTP resent successfully.",
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to resend OTP", error: error.message });
   }
 };
 
@@ -222,7 +288,7 @@ export const listAllExperts = async (req, res) => {
 // super admin things
 export const registerAdmin = async (req, res) => {
   try {
-    const loggedInAdmin = req.admin; 
+    const loggedInAdmin = req.admin;
 
     //  Only superadmin can create admin
     if (loggedInAdmin.role !== "superadmin") {
