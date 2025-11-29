@@ -39,14 +39,14 @@ export const loginAdmin = async (req, res) => {
     // GENERATE OTP 
     const otp = generateSecureOtp();
 
-
     admin.otpCode = otp;
     admin.otpExpire = Date.now() + 5 * 60 * 1000; // 5 minutes
     await admin.save();
-
+    
     //SEND OTP TO EMAIL 
-    await sendEmailOtp(admin.email, otp);
-
+    // await sendEmailOtp(admin.email, otp);
+    
+    console.log(admin)
     return res.status(200).json({
       message: "OTP sent to your email. Please verify OTP.",
       step: "verify-otp",
@@ -107,7 +107,10 @@ export const resendAdminOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
+
+
     const admin = await Admin.findOne({ email });
+    if(!admin.otp) res.status(404).json({ message: "First Login with Password" });
 
     if (!admin)
       return res.status(404).json({ message: "Admin not found" });
@@ -118,7 +121,7 @@ export const resendAdminOtp = async (req, res) => {
     admin.otpExpire = Date.now() + 5 * 60 * 1000;
     await admin.save();
 
-    await sendEmailOtp(email, otp);
+    // await sendEmailOtp(email, otp);
 
     return res.status(200).json({
       message: "OTP resent successfully.",
@@ -243,7 +246,7 @@ export const logoutAdmin = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const admin = await Admin.findById(req.admin.id).select("-password");
+    const admin = await Admin.findById(req.admin.id).select("+name +email +phoneNo +role +passwordLastChanged +passwordLastLogin +howManyExpertInYou");
     if (!admin) return res.status(404).json({ message: "Admin not found" });
 
     res.status(200).json({ admin });
@@ -255,12 +258,15 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { name, phoneNo } = req.body;
+    const { name, phoneNo,email } = req.body;
 
     const admin = await Admin.findById(req.admin.id);
 
     if (name) admin.name = name;
     if (phoneNo) admin.phoneNo = phoneNo;
+    if (email) admin.email = email;
+
+    if(!admin) res.status(201).json({ message: "Admin profile not updated" });
 
     await admin.save();
 

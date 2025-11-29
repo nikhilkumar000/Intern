@@ -53,7 +53,7 @@ adminRouter.put("/update/profile", protectAdmin, updateProfile);
 /* ---------------------- SUPERADMIN ONLY ---------------------- */
 
 // Create Admin / SuperAdmin
-adminRouter.post("/register", protectAdmin, registerAdmin);
+adminRouter.post("/register", registerAdmin);
 
 /* ---------------------- EXPERT LIST ---------------------- */
 
