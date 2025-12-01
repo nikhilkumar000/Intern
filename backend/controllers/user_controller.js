@@ -143,8 +143,7 @@ export const logoutUser = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log(id)
+      const id = req.user._id;
 
     if (!mongoose.isValidObjectId(id)) {
       return res
@@ -260,9 +259,10 @@ export const userProfileDelete = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    const { userId, oldPassword, newPassword } = req.body;
+    const userId = req.user._id;
+    const {  oldPassword, newPassword } = req.body;
 
-    if (!userId || !oldPassword || !newPassword) {
+    if (  !oldPassword || !newPassword) {
       return res.status(400).json({
         success: false,
         message: "userId, oldPassword and newPassword are required",
