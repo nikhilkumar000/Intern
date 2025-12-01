@@ -355,7 +355,7 @@ export const registerAdmin = async (req, res) => {
 
     return res.status(201).json({
       message: "Admin account created successfully",
-      token,
+      // token,
       admin: {
         id: newAdmin._id,
         name: newAdmin.name,

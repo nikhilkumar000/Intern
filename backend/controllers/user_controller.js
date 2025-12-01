@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 
 
 const sendTokenCookie = (res, user) => {
-  const token = generateToken({ id: user._id });
+  const token = generateToken({ id: user._id, role:"user" });
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -69,7 +69,14 @@ const sendTokenCookie = (res, user) => {
 
       const user = await User.create(userData);
 
+      if(!user){
+        return res.status(500).json({ message: error.message || "Registration failed, please try again later." });
+      }
+
     
+       // SEND TOKEN COOKIE JUST LIKE LOGIN
+      const token = sendTokenCookie(res, user);
+
       return res.status(201).json({
       _id: user._id,
       name: `${user.firstName} ${user.lastName}`,
@@ -150,16 +157,16 @@ export const getUserProfile = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid user id" });
     }
-    console.log("id pass")
+   
 
     const user = await User.findById(id).select("-password");
-    console.log(user)
+    
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    console.log(user)
+    
     return res.status(200).json({
       user,
     });
@@ -378,7 +385,7 @@ export const resetPassword = async (req, res, next) => {
 
     res.status(200).json({ message: 'Password has been reset' });
   } catch (error) {
-    console.log(error);
+
     res.status(500).json({ message: 'Something went wrong' });
   }
 };
