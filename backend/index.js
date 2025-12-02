@@ -9,6 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import ExpertRouter from "./routes/expert.js";
 import adminRouter from "./routes/admin_auth.js";
+import CallRouter from "./routes/call.js"
 
 import http from "http";
 import { Server } from "socket.io";
@@ -47,6 +48,7 @@ app.use(cors(corsOptions));
 app.use("/user/auth", userRouter);
 app.use("/expert",ExpertRouter);
 app.use("/admin", adminRouter);
+app.use("/call", CallRouter);
 
 
 // ===== Serve react build in production =====
@@ -163,10 +165,10 @@ io.on("connection", (socket) => {
 
   // ===== CALL REQUEST (ONLY user -> expert) =====
   // User emits: socket.emit("call-user", { to: expertId, from: userId, callerName })
-  socket.on("call-user", ({ to, from, callerName }) => {
+  socket.on("call-user", ({ to, from, callerName ,callId}) => {
     // to = expertId (Mongo), from = userId (Mongo)
     const expertSocketId = onlineExperts[to];
-    console.log("CALL-USER", { to, from, expertSocketId, callerName });
+    console.log("CALL-USER", { to, from, expertSocketId, callerName ,callId});
 
     // to: expert mongoid
     //from user mongoid 
@@ -179,6 +181,7 @@ io.on("connection", (socket) => {
     io.to(expertSocketId).emit("incoming-call", {
       from,       // userId (Mongo)
       callerName,
+      callId
     });
     console.log("from incoming call",from);
 
