@@ -6,7 +6,8 @@ import {
   logoutExpert,
   expertProfileDelete,
   expertProfileUpdate,
-  changePassword
+  changePassword,
+  getAllExperts
 } from "../controllers/expert_controller.js";
 import multer from "multer";
 import { protectExpert } from "../middlewares/ExpertAuth.js";
@@ -33,5 +34,6 @@ ExpertRouter.patch("/settings/visibility", protectExpert, updateVisibility);
 ExpertRouter.patch("/profile/password/change", protectExpert, changePassword);
 // ExpertRouter.get("/profile",protectExpert,getExpertProfile);
 //Password Forgot
+ExpertRouter.get("/allexperts",getAllExperts);
 
 export default ExpertRouter;

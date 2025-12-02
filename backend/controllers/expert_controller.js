@@ -104,6 +104,7 @@ export const loginExpert = async (req, res) => {
       message: "Login successfully",
       name: expert.name,
       email: expert.email,
+      expertId:expert._id
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -464,6 +465,27 @@ export const changePassword = async (req, res) => {
     });
   }
 };
+
+
+export const getAllExperts = async (req, res) => {
+  try {
+    const experts = await Expert.find().select("-password"); // remove sensitive fields
+
+    return res.status(200).json({
+      success: true,
+      count: experts.length,
+      experts,
+    });
+  } catch (error) {
+    console.error("Get all experts error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 
 
 
