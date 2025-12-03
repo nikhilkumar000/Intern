@@ -190,7 +190,7 @@ io.on("connection", (socket) => {
 
   // ===== ACCEPT CALL (expert -> user) =====
   // Expert emits: socket.emit("accept-call", { to: userId, from: expertId })
-  socket.on("accept-call", ({ to, from }) => {
+  socket.on("accept-call", ({ to, from,callId }) => {
     // to = userId (caller), from = expertId
     //to = user mongo id   , from = expert socket id
     console.log(onlineExperts)
@@ -203,7 +203,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(userSocketId).emit("call-accepted", { from }); // from = expert socket Id
+    io.to(userSocketId).emit("call-accepted", { from, callId });
   });
 
   // ===== WebRTC signaling (BOTH directions, but always by Mongo IDs) =====

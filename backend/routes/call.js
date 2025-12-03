@@ -12,7 +12,7 @@ const CallRouter = express.Router();
 
 CallRouter.post("/start", startCall);
 CallRouter.put("/end", endCall);
-CallRouter.post("/transcript",addTranscriptChunk);
+CallRouter.post("/transcript/add-chunk",addTranscriptChunk);
 CallRouter.get("/fulltranscript",getCallTranscript);
 
 export default CallRouter;

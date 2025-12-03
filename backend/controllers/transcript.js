@@ -3,7 +3,12 @@ import CallTranscript from "../models/CallTranscript.js";
 export const addTranscriptChunk = async (req, res) => {
   try {
     const { callId, speaker, text, language, startedAt, endedAt } = req.body;
-
+    console.log("callId:",callId);
+    console.log(speaker);
+    console.log(text);
+    console.log(language);
+    console.log(startedAt);
+    console.log(endedAt);
     if (!callId || !speaker || !text) {
       return res.status(400).json({
         success: false,
