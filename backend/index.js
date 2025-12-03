@@ -51,17 +51,17 @@ app.use("/admin", adminRouter);
 app.use("/call", CallRouter);
 
 
-// ===== Serve react build in production =====
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// // ===== Serve react build in production =====
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-if (process.env.NODE_ENV === "production") {
-  const buildPath = path.join(__dirname, "../client/build"); // adjust if structure differs
-  app.use(express.static(buildPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(buildPath, "index.html"));
-  });
-}
+// if (process.env.NODE_ENV === "production") {
+//   const buildPath = path.join(__dirname, "../client/build"); // adjust if structure differs
+//   app.use(express.static(buildPath));
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.join(buildPath, "index.html"));
+//   });
+// }
 
 
 

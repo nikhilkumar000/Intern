@@ -4,8 +4,12 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "start:prod": "NODE_ENV=production node index.js",
+    
+    "lint": "eslint \"**/*.js\"",
+    "build": "echo \"No build step — backend is pure JavaScript\""
   },
   "keywords": [],
   "author": "",
