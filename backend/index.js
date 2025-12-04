@@ -25,8 +25,8 @@ app.use(cookieParser());
 const server = http.createServer(app);
 
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
+  "https://user-nine-nu.vercel.app/",
+  "https://toro-rust.vercel.app/",
   
 ];
 
