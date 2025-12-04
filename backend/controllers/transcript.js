@@ -1,4 +1,4 @@
-import CallTranscript from "../models/CallTranscript.js";
+import CallTranscript from "../models/callTranscript.js";
 
 export const addTranscriptChunk = async (req, res) => {
   try {
