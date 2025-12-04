@@ -24,24 +24,29 @@ app.use(cookieParser());
 
 const server = http.createServer(app);
 
-const allowedOrigins = [
-  "https://user-nine-nu.vercel.app/",
-  "https://toro-rust.vercel.app/",
+// const allowedOrigins = [
+//   "https://user-nine-nu.vercel.app/",
+//   "https://toro-rust.vercel.app/",
   
-];
+// ];
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true); 
-    } else {
-      callback(new Error("CORS blocked: Not allowed by server"));
-    }
-  },
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true); 
+//     } else {
+//       callback(new Error("CORS blocked: Not allowed by server"));
+//     }
+//   },
+//   credentials: true,
+// };
+
+// app.use(cors(corsOptions));
+
+app.use(cors({
+  origin: "*",
   credentials: true,
-};
-
-app.use(cors(corsOptions));
+}));
 
 
 // ===== API routes =====
